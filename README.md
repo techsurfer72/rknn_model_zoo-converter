@@ -2,6 +2,55 @@
 
 
 
+## Usage Workflow
+
+### 1. Using GitHub Actions Workflow
+
+The repository provides a GitHub Actions workflow for ONNX to RKNN conversion. You can run it directly from the GitHub Actions tab:
+
+1. Go to the GitHub repository page
+2. Click on the "Actions" tab
+3. Select "ONNX to RKNN Conversion" workflow
+4. Click "Run workflow" button
+5. Fill in the parameters:
+   - `model_name`: Pure model name (e.g., "yolov7")
+   - `convert_args`: Conversion arguments (platform dtype, e.g., "rk3588 i8")
+6. Click "Run workflow" to start the conversion
+
+### 2. Using Local Conversion Script
+
+You can also use the local `convert.sh` script for model conversion:
+
+#### Usage:
+```bash
+# Download model
+bash convert.sh --download <model_name>
+
+# Convert model
+bash convert.sh <model_name> <convert_args>
+
+# Get model directory
+bash convert.sh --get-model-dir <model_name>
+```
+
+#### Parameters:
+- `<model_name>`: Pure model name (e.g., "yolov7")
+- `<convert_args>`: Conversion arguments (platform dtype, e.g., "rk3588 i8")
+
+#### Examples:
+```bash
+# Download yolov7 model
+bash convert.sh --download yolov7
+
+# Convert yolov7 model to RKNN format for rk3588 platform with INT8 quantization
+bash convert.sh yolov7 "rk3588 i8"
+
+# Get model directory for yolov7
+bash convert.sh --get-model-dir yolov7
+```
+
+
+
 # RKNN Model Zoo
 
 ## Description

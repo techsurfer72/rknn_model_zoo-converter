@@ -2,6 +2,55 @@
 
 
 
+## 使用流程
+
+### 1. 使用 GitHub Actions 工作流
+
+本仓库提供了一个 GitHub Actions 工作流，用于 ONNX 到 RKNN 的转换。您可以直接从 GitHub Actions 标签页运行它：
+
+1. 进入 GitHub 仓库页面
+2. 点击 "Actions" 标签页
+3. 选择 "ONNX to RKNN Conversion" 工作流
+4. 点击 "Run workflow" 按钮
+5. 填写参数：
+   - `model_name`：纯模型名称（例如 "yolov7"）
+   - `convert_args`：转换参数（平台 dtype，例如 "rk3588 i8"）
+6. 点击 "Run workflow" 开始转换
+
+### 2. 使用本地转换脚本
+
+您也可以使用本地 `convert.sh` 脚本进行模型转换：
+
+#### 使用方法：
+```bash
+# 下载模型
+bash convert.sh --download <model_name>
+
+# 转换模型
+bash convert.sh <model_name> <convert_args>
+
+# 获取模型目录
+bash convert.sh --get-model-dir <model_name>
+```
+
+#### 参数说明：
+- `<model_name>`：纯模型名称（例如 "yolov7"）
+- `<convert_args>`：转换参数（平台 dtype，例如 "rk3588 i8"）
+
+#### 示例：
+```bash
+# 下载 yolov7 模型
+bash convert.sh --download yolov7
+
+# 将 yolov7 模型转换为 RKNN 格式，适用于 rk3588 平台，使用 INT8 量化
+bash convert.sh yolov7 "rk3588 i8"
+
+# 获取 yolov7 模型的目录
+bash convert.sh --get-model-dir yolov7
+```
+
+
+
 # RKNN Model Zoo
 
 ## 简介

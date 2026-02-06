@@ -1,0 +1,104 @@
+name: ONNX to RKNN Conversion
+
+on:
+  # push:
+  #   branches: [ main, dev_v2.3.2_converter ]
+  # pull_request:
+  #   branches: [ main, dev_v2.3.2_converter ]
+  workflow_dispatch:
+    inputs:
+      model_name:
+        description: 'Model name (pure model name format, e.g. "yolov7")'
+        required: true
+        default: 'yolov7'
+      convert_args:
+        description: 'Conversion arguments for convert.py (platform dtype)'
+        required: true
+        default: 'rk3588 i8'
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.8'
+    
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y wget curl libprotobuf-dev protobuf-compiler
+    
+    - name: Install RKNN-Toolkit2
+      run: |
+        # Install RKNN-Toolkit2 v2.3.2
+        pip install rknn-toolkit2==2.3.2
+
+    - name: Install project dependencies
+      run: |
+        pip install  -r docs/requirements_cp38.txt
+    - name: Download model
+      run: |
+        # Run download_model.sh script
+        echo "Model name: ${{ github.event.inputs.model_name }}"
+        bash convert.sh --download "${{ github.event.inputs.model_name }}"
+    
+    - name: Make convert.sh executable
+      run: |
+        chmod +x convert.sh
+    
+    - name: Convert ONNX to RKNN
+      run: |
+        # Run conversion script with provided arguments
+        bash convert.sh "${{ github.event.inputs.model_name }}" "${{ github.event.inputs.convert_args }}"
+    
+    - name: Verify conversion result
+      run: |
+        # Check if RKNN file was created
+        RKNN_DIR=$(bash convert.sh --get-model-dir "${{ github.event.inputs.model_name }}")
+        echo "Using model directory: $RKNN_DIR"
+        RKNN_MODEL=$(find "$RKNN_DIR/model" -name "*.rknn" | head -1)
+        echo "Found RKNN model: $RKNN_MODEL"
+        
+        if [ -f "$RKNN_MODEL" ]; then
+          echo "Conversion successful! RKNN model: $RKNN_MODEL"
+          ls -la "$RKNN_MODEL"
+        else
+          echo "Conversion failed! No RKNN model found."
+          ls -la "$RKNN_DIR/model"
+          exit 1
+        fi
+    
+    - name: Upload RKNN model
+      run: |
+        # Determine model path
+        RKNN_DIR=$(bash convert.sh --get-model-dir "${{ github.event.inputs.model_name }}")
+        
+        # Check for RKNN files
+        echo "Looking for RKNN files in: $RKNN_DIR/model"
+        ls -la "$RKNN_DIR/model/"
+        
+        # Count RKNN files
+        RKNN_COUNT=$(ls "$RKNN_DIR/model/" | grep \.rknn$ | wc -l)
+        echo "Found $RKNN_COUNT RKNN files"
+        
+        if [ $RKNN_COUNT -gt 0 ]; then
+          echo "Uploading RKNN files..."
+          # Use GitHub Actions upload artifact
+          echo "rknn_dir=$RKNN_DIR/model" >> $GITHUB_OUTPUT
+        else
+          echo "Warning: No RKNN files found!"
+        fi
+      id: check_rknn
+    
+    - name: Upload RKNN model artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: rknn-model
+        path: ${{ steps.check_rknn.outputs.rknn_dir }}/*.rknn
+        retention-days: 30
+      if: steps.check_rknn.outputs.rknn_dir != ''
